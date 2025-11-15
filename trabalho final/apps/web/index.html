@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0096ff">
+  </head>
+  <body>
+    <h1>PWA Funcionando</h1>
+    <button onclick="test()">Chamar API</button>
+    <pre id="out"></pre>
+
+    <script>
+      async function test(){
+        const r = await fetch('http://localhost:3000/api/hello');
+        document.getElementById('out').textContent = JSON.stringify(await r.json(),null,2);
+      }
+
+      if('serviceWorker' in navigator){
+        navigator.serviceWorker.register('/service-worker.js');
+      }
+    </script>
+  </body>
+</html>
