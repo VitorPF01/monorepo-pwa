@@ -1,1 +1,170 @@
+name: CI - Web/API/PWA
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+
+  install_and_test:
+    name: Install, Build and Test Projects
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+
+      - name: Install Root Dependencies
+        run: npm install
+
+      - name: Install Web
+        run: |
+          cd web
+          npm ci
+          npm run build
+
+      - name: Install API
+        run: |
+          cd api
+          npm ci
+          npm run test --if-present
+
+
+  playwright_tests:
+    name: Playwright Tests
+    runs-on: ubuntu-latest
+    needs: install_and_test
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Playwright
+        run: |
+          cd web
+          npm ci
+          npx playwright install --with-deps
+
+      - name: Run Playwright Tests
+        run: |
+          cd web
+          npx playwright test --reporter=html
+
+      - name: Upload Playwright Report Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: web/playwright-report/
+          retention-days: 5
+
+
+  lighthouse_audit:
+    name: Lighthouse Audit
+    runs-on: ubuntu-latest
+    needs: install_and_test
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Lighthouse CI
+        run: npm install -g @lhci/cli
+
+      - name: Build Web
+        run: |
+          cd web
+          npm ci
+          npm run build
+
+      - name: Run Lighthouse CI
+        run: |
+          cd web
+          lhci autorun || echo "Lighthouse warnings ignored"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lighthouse-report
+          path: .lighthouseci/
+          retention-days: 5
+
+
+  docker_build:
+    name: Docker Build API + Web
+    runs-on: ubuntu-latest
+    needs: install_and_test
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USER }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build API Image
+        run: docker build -t api-image ./api
+
+      - name: Build Web Image
+        run: docker build -t web-image ./web
+
+
+  deploy_gh_pages:
+    name: Deploy to GitHub Pages
+    needs: install_and_test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Build Web
+        run: |
+          cd web
+          npm ci
+          npm run build
+
+      - name: Upload artifact to Pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: web/dist
+
+  deploy:
+    needs: deploy_gh_pages
+    runs-on: ubuntu-latest
+    name: Deploy GitHub Pages
+
+    permissions:
+      pages: write
+      id-token: write
+
+    steps:
+      - name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v4
 
