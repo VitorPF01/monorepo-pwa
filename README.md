@@ -56,18 +56,6 @@ Publica no GitHub Pages
 
 Salva artefatos para avaliação
 
-🔗 Links da Entrega (Requisitos do Trabalho) 📦 Repositório Monorepo
-
-👉 https://github.com/alexandren18/monorepo-pwa
-
-🌐 PWA publicado (GitHub Pages)
-
-👉 https://alexandren18.github.io/monorepo-pwa
-
-🔄 Última Execução do CI (build + testes + deploy)
-
-👉 https://github.com/alexandren18/monorepo-pwa/actions/runs/19401371640
-
 📁 Artefatos gerados pelo CI
 
 ✔ github-pages.zip — build final publicado
